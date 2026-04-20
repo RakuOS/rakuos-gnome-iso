@@ -12,6 +12,18 @@ dnf install -qy --enable-repo=fedora-cisco-openh264 --allowerasing anaconda-live
 
 mkdir -p /var/lib/rpm-state # Needed for Anaconda Web UI
 
+    # Read packages into array
+    mapfile -t PACKAGES < <(
+        grep -v '^\s*#' "/usr/share/rakuos/packages-live.list" \
+        | grep -v '^\s*$' \
+        | sed 's/\s*#.*//' \
+        | tr -s ' \t' '\n' \
+        | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
+        | grep -v '^$'
+    ) || true
+
+dnf install -y --refresh "${PACKAGES[@]}"
+
 # Utilities for displaying a dialog prompting users to review secure boot documentation
 dnf install -qy --setopt=install_weak_deps=0 qrencode yad
 
@@ -27,7 +39,7 @@ imagetag="$(podman images --format '{{ .Tag }}\n' "$imageref" | head -1)"
 echo "Rakuos release $VERSION_ID ($VERSION_CODENAME)" >/etc/system-release
 
 # Get Artwork
-git clone --depth 1 --quiet https://github.com/RakuOS/rakuos-base.git /root/packages
+git clone --depth 1 --quiet https://gitlab.com/rakuos/iso/iso-base.git /root/packages
 
 # Installer icon
 _icon=/root/packages/installer/branding/rakuos-installer.svg
@@ -165,43 +177,14 @@ if [[ $imageref == *-nvidia* ]]; then
     }
 fi
 
-# Determine desktop environment. Must match one of /usr/libexec/livesys/sessions.d/livesys-{desktop_env}
-# See https://github.com/ublue-os/titanoboa/blob/6c2e8ba58c7534b502081fe24363d2a60e7edca9/Justfile#L199-L213
-desktop_env=""
-_session_file="$(find /usr/share/wayland-sessions/ /usr/share/xsessions \
-    -maxdepth 1 -type f -not -name '*gamescope*.desktop' -and -name '*.desktop' -printf '%P' -quit)"
-case $_session_file in
-budgie*) desktop_env=budgie ;;
-cosmic*) desktop_env=cosmic ;;
-gnome*) desktop_env=gnome ;;
-plasma*) desktop_env=kde ;;
-sway*) desktop_env=sway ;;
-xfce*) desktop_env=xfce ;;
-esac
-
-
 # Don't check for verified image
 rm -vf /etc/profile.d/verify_motd.sh
 
 echo "Copying shared system files..."
 cp -af /root/packages/installer/system_files/shared/. /
 
-if [[ "$desktop_env" == "gnome" ]]; then
-    echo "Copying GNOME-specific system files..."
-    cp -a /root/packages/installer/system_files/gnome/. /
-elif [[ "$desktop_env" == "kde" ]]; then
-    echo "Copying KDE-specific system files..."
-    cp -a /root/packages/installer/system_files/kde/. /
-elif [[ "$desktop_env" == "cosmic" ]]; then
-    echo "Copying cosmic-specific system files..."
-    cp -a /root/packages/installer/system_files/cosmic/. /
-fi
-
-# Change default pins for KDE
-if [[ $desktop_env == kde ]]; then
-    sed -i '/const allPanels/,$d' /usr/share/plasma/layout-templates/org.kde.plasma.desktop.defaultPanel/contents/layout.js
-    sed -i '$r /usr/share/plasma/shells/org.kde.plasma.desktop/contents/updates/rakuos-pins.js' /usr/share/plasma/layout-templates/org.kde.plasma.desktop.defaultPanel/contents/layout.js
-fi
+echo "Copying GNOME-specific system files..."
+cp -a /root/packages/installer/system_files/gnome/. /
 
 # Don't start the fedora-welcome app (gnome only)
 if [[ $desktop_env == gnome ]]; then
