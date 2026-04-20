@@ -33,7 +33,6 @@ stages:
         git \
         just \
         podman \
-        podman-plugins \
         jq \
         findutils \
         tar \
