@@ -91,7 +91,8 @@ build-iso-standard:
       sed -i 's/--rm -it \\/--rm -i --network host \\/g' titanoboa/Justfile
       sed -i 's/BUILDER="$(iso_dependencies)"/BUILDER="0"/' titanoboa/Justfile
       sed -i 's|-o /app/output.iso|-o ./output.iso|' titanoboa/Justfile
-      sed -i 's|mv \\./output\\.iso .*|true|' titanoboa/Justfile
+      awk '{ if ($0 == "    mv ./output.iso {{ justfile_dir() }} &>/dev/null") print "    true"; else print $0 }' titanoboa/Justfile > titanoboa/Justfile.tmp
+      mv titanoboa/Justfile.tmp titanoboa/Justfile
       export TITANOBOA_BUILDER_DISTRO="${BUILDER_DISTRO}"
       export HOOK_post_rootfs="${CI_PROJECT_DIR}/config/configure-iso.sh"
       export HOOK_pre_initramfs="${CI_PROJECT_DIR}/config/pre_initramfs.sh"
@@ -104,7 +105,10 @@ build-iso-standard:
         export NEW_ISO_NAME="rakuos-gnome-${BRANCH_SLUG}-${BUILD_DATE}-${PLATFORM}.iso"
         export LATEST_ISO_NAME="rakuos-gnome-${BRANCH_SLUG}-latest-${PLATFORM}.iso"
       fi
-      mv titanoboa/output.iso "output/${NEW_ISO_NAME}"
+      ISO_PATH="output.iso"
+      [[ -f titanoboa/output.iso ]] && ISO_PATH="titanoboa/output.iso"
+      [[ -f "${ISO_PATH}" ]] || { echo "ERROR: ISO output not found"; ls -la . titanoboa || true; exit 1; }
+      mv "${ISO_PATH}" "output/${NEW_ISO_NAME}"
       cp "output/${NEW_ISO_NAME}" "output/${LATEST_ISO_NAME}"
       sha256sum "output/${NEW_ISO_NAME}" > "output/${NEW_ISO_NAME}.sha256"
       sha256sum "output/${LATEST_ISO_NAME}" > "output/${LATEST_ISO_NAME}.sha256"
@@ -126,7 +130,8 @@ build-iso-nvidia:
       sed -i 's/--rm -it \\/--rm -i --network host \\/g' titanoboa/Justfile
       sed -i 's/BUILDER="$(iso_dependencies)"/BUILDER="0"/' titanoboa/Justfile
       sed -i 's|-o /app/output.iso|-o ./output.iso|' titanoboa/Justfile
-      sed -i 's|mv \\./output\\.iso .*|true|' titanoboa/Justfile
+      awk '{ if ($0 == "    mv ./output.iso {{ justfile_dir() }} &>/dev/null") print "    true"; else print $0 }' titanoboa/Justfile > titanoboa/Justfile.tmp
+      mv titanoboa/Justfile.tmp titanoboa/Justfile
       export TITANOBOA_BUILDER_DISTRO="${BUILDER_DISTRO}"
       export HOOK_post_rootfs="${CI_PROJECT_DIR}/config/configure-iso.sh"
       export HOOK_pre_initramfs="${CI_PROJECT_DIR}/config/pre_initramfs.sh"
@@ -139,7 +144,10 @@ build-iso-nvidia:
         export NEW_ISO_NAME="rakuos-gnome-nvidia-${BRANCH_SLUG}-${BUILD_DATE}-${PLATFORM}.iso"
         export LATEST_ISO_NAME="rakuos-gnome-nvidia-${BRANCH_SLUG}-latest-${PLATFORM}.iso"
       fi
-      mv titanoboa/output.iso "output/${NEW_ISO_NAME}"
+      ISO_PATH="output.iso"
+      [[ -f titanoboa/output.iso ]] && ISO_PATH="titanoboa/output.iso"
+      [[ -f "${ISO_PATH}" ]] || { echo "ERROR: ISO output not found"; ls -la . titanoboa || true; exit 1; }
+      mv "${ISO_PATH}" "output/${NEW_ISO_NAME}"
       cp "output/${NEW_ISO_NAME}" "output/${LATEST_ISO_NAME}"
       sha256sum "output/${NEW_ISO_NAME}" > "output/${NEW_ISO_NAME}.sha256"
       sha256sum "output/${LATEST_ISO_NAME}" > "output/${LATEST_ISO_NAME}.sha256"
