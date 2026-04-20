@@ -1,0 +1,144 @@
+# ============================================================
+# RakuOS GNOME ISO — GitLab CI/CD Pipeline
+# ============================================================
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - when: never
+
+variables:
+  IMAGE_REPO: "registry.gitlab.com/rakuos/images/rakuos-gnome"
+  TITANOBOA_REPO: "https://gitlab.com/rakuos/iso/titanoboa.git"
+  TITANOBOA_REF: "main"
+  PLATFORM: "amd64"
+  COMPRESSION: "squashfs"
+  BUILDER_DISTRO: "fedora"
+
+stages:
+  - build
+
+.iso-job:
+  image: quay.io/fedora/fedora:latest
+  tags:
+    - saas-linux-2xlarge-amd64
+  before_script:
+    - |
+      set -euo pipefail
+      dnf install -y \
+        git \
+        just \
+        podman \
+        podman-plugins \
+        jq \
+        findutils \
+        tar \
+        xorriso \
+        dosfstools \
+        grub2 \
+        grub2-efi \
+        grub2-tools \
+        grub2-tools-extra \
+        grub2-efi-x64 \
+        grub2-efi-x64-cdboot \
+        grub2-efi-x64-modules \
+        shim \
+        squashfs-tools \
+        erofs-utils \
+        policycoreutils
+      case "${CI_COMMIT_BRANCH}" in
+        "${CI_DEFAULT_BRANCH}")
+          export BRANCH_SLUG="latest"
+          export IS_STABLE="true"
+          ;;
+        "staging")
+          export BRANCH_SLUG="staging"
+          export IS_STABLE="false"
+          ;;
+        "rawhide")
+          export BRANCH_SLUG="rawhide"
+          export IS_STABLE="false"
+          ;;
+        "rakuosel")
+          export BRANCH_SLUG="rakuosel"
+          export IS_STABLE="false"
+          ;;
+        *)
+          export BRANCH_SLUG="$(printf '%s' "${CI_COMMIT_BRANCH}" | tr '[:upper:]' '[:lower:]' | sed 's#[^a-z0-9._-]#-#g')"
+          export IS_STABLE="false"
+          ;;
+      esac
+      export BUILD_DATE="$(date -u +%Y.%m.%d)"
+      echo "Using image tag: ${BRANCH_SLUG}"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == "staging"'
+    - if: '$CI_COMMIT_BRANCH == "rawhide"'
+    - if: '$CI_COMMIT_BRANCH == "rakuosel"'
+
+build-iso-standard:
+  extends: .iso-job
+  stage: build
+  script:
+    - |
+      set -euo pipefail
+      export IMAGE_REF="${IMAGE_REPO}:${BRANCH_SLUG}"
+      git clone --depth 1 --branch "${TITANOBOA_REF}" "${TITANOBOA_REPO}" titanoboa
+      export TITANOBOA_BUILDER_DISTRO="${BUILDER_DISTRO}"
+      export HOOK_post_rootfs="${CI_PROJECT_DIR}/config/configure-iso.sh"
+      export HOOK_pre_initramfs="${CI_PROJECT_DIR}/config/pre_initramfs.sh"
+      just -f titanoboa/Justfile build "${IMAGE_REF}" 1 none "${COMPRESSION}" NONE "${IMAGE_REF}" 1
+      mkdir -p output
+      if [[ "${IS_STABLE}" == "true" ]]; then
+        export NEW_ISO_NAME="rakuos-gnome-${BUILD_DATE}-${PLATFORM}.iso"
+        export LATEST_ISO_NAME="rakuos-gnome-latest-${PLATFORM}.iso"
+      else
+        export NEW_ISO_NAME="rakuos-gnome-${BRANCH_SLUG}-${BUILD_DATE}-${PLATFORM}.iso"
+        export LATEST_ISO_NAME="rakuos-gnome-${BRANCH_SLUG}-latest-${PLATFORM}.iso"
+      fi
+      mv titanoboa/output.iso "output/${NEW_ISO_NAME}"
+      cp "output/${NEW_ISO_NAME}" "output/${LATEST_ISO_NAME}"
+      sha256sum "output/${NEW_ISO_NAME}" > "output/${NEW_ISO_NAME}.sha256"
+      sha256sum "output/${LATEST_ISO_NAME}" > "output/${LATEST_ISO_NAME}.sha256"
+  artifacts:
+    name: "rakuos-gnome-${CI_COMMIT_REF_SLUG}-standard-${CI_PIPELINE_ID}"
+    paths:
+      - output/*.iso
+      - output/*.sha256
+    expire_in: 7 days
+
+build-iso-nvidia:
+  extends: .iso-job
+  stage: build
+  script:
+    - |
+      set -euo pipefail
+      export IMAGE_REF="${IMAGE_REPO}/nvidia:${BRANCH_SLUG}"
+      git clone --depth 1 --branch "${TITANOBOA_REF}" "${TITANOBOA_REPO}" titanoboa
+      export TITANOBOA_BUILDER_DISTRO="${BUILDER_DISTRO}"
+      export HOOK_post_rootfs="${CI_PROJECT_DIR}/config/configure-iso.sh"
+      export HOOK_pre_initramfs="${CI_PROJECT_DIR}/config/pre_initramfs.sh"
+      just -f titanoboa/Justfile build "${IMAGE_REF}" 1 none "${COMPRESSION}" NONE "${IMAGE_REF}" 1
+      mkdir -p output
+      if [[ "${IS_STABLE}" == "true" ]]; then
+        export NEW_ISO_NAME="rakuos-gnome-nvidia-${BUILD_DATE}-${PLATFORM}.iso"
+        export LATEST_ISO_NAME="rakuos-gnome-nvidia-latest-${PLATFORM}.iso"
+      else
+        export NEW_ISO_NAME="rakuos-gnome-nvidia-${BRANCH_SLUG}-${BUILD_DATE}-${PLATFORM}.iso"
+        export LATEST_ISO_NAME="rakuos-gnome-nvidia-${BRANCH_SLUG}-latest-${PLATFORM}.iso"
+      fi
+      mv titanoboa/output.iso "output/${NEW_ISO_NAME}"
+      cp "output/${NEW_ISO_NAME}" "output/${LATEST_ISO_NAME}"
+      sha256sum "output/${NEW_ISO_NAME}" > "output/${NEW_ISO_NAME}.sha256"
+      sha256sum "output/${LATEST_ISO_NAME}" > "output/${LATEST_ISO_NAME}.sha256"
+  artifacts:
+    name: "rakuos-gnome-${CI_COMMIT_REF_SLUG}-nvidia-${CI_PIPELINE_ID}"
+    paths:
+      - output/*.iso
+      - output/*.sha256
+    expire_in: 7 days
