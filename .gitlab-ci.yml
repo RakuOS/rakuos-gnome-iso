@@ -88,6 +88,7 @@ build-iso-standard:
       set -euo pipefail
       export IMAGE_REF="${IMAGE_REPO}:${BRANCH_SLUG}"
       git clone --depth 1 --branch "${TITANOBOA_REF}" "${TITANOBOA_REPO}" titanoboa
+      sed -i 's/--rm -it \\/--rm -i --network host \\/g' titanoboa/Justfile
       export TITANOBOA_BUILDER_DISTRO="${BUILDER_DISTRO}"
       export HOOK_post_rootfs="${CI_PROJECT_DIR}/config/configure-iso.sh"
       export HOOK_pre_initramfs="${CI_PROJECT_DIR}/config/pre_initramfs.sh"
@@ -119,6 +120,7 @@ build-iso-nvidia:
       set -euo pipefail
       export IMAGE_REF="${IMAGE_REPO}/nvidia:${BRANCH_SLUG}"
       git clone --depth 1 --branch "${TITANOBOA_REF}" "${TITANOBOA_REPO}" titanoboa
+      sed -i 's/--rm -it \\/--rm -i --network host \\/g' titanoboa/Justfile
       export TITANOBOA_BUILDER_DISTRO="${BUILDER_DISTRO}"
       export HOOK_post_rootfs="${CI_PROJECT_DIR}/config/configure-iso.sh"
       export HOOK_pre_initramfs="${CI_PROJECT_DIR}/config/pre_initramfs.sh"
