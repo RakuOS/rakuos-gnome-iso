@@ -1,3 +1,12 @@
+spec:
+  inputs:
+    homelab-upload:
+      description: "Upload built ISOs to the homelab over ZeroTier and SFTP"
+      options:
+        - "true"
+        - "false"
+      default: "true"
+---
 # ============================================================
 # RakuOS GNOME ISO — GitLab CI/CD Pipeline
 # ============================================================
@@ -18,7 +27,7 @@ variables:
   PLATFORM: "amd64"
   COMPRESSION: "squashfs"
   BUILDER_DISTRO: "fedora"
-  HOMELAB_UPLOAD: "true"
+  HOMELAB_UPLOAD: "$[[ inputs.homelab-upload ]]"
 
 stages:
   - build
