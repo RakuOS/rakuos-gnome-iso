@@ -120,11 +120,14 @@ build-iso-standard:
       if [[ "${CI_PIPELINE_SOURCE}" != "merge_request_event" ]]; then
         cp "output/${NEW_ISO_NAME}" "output/${LATEST_ISO_NAME}"
         sha256sum "output/${LATEST_ISO_NAME}" > "output/${LATEST_ISO_NAME}.sha256"
+        ls -l /dev/net/tun || true
         zerotier-one -d
+        zerotier-cli info || true
         for _ in $(seq 1 30); do
           [[ -f /var/lib/zerotier-one/identity.public ]] && break
           sleep 1
         done
+        zerotier-cli listnetworks || true
         ZT_NODE_ID="$(cut -d: -f1 /var/lib/zerotier-one/identity.public)"
         zerotier-cli join "${ZEROTIER_NETWORK_ID}"
         curl -fsS -X POST \
@@ -189,11 +192,14 @@ build-iso-nvidia:
       if [[ "${CI_PIPELINE_SOURCE}" != "merge_request_event" ]]; then
         cp "output/${NEW_ISO_NAME}" "output/${LATEST_ISO_NAME}"
         sha256sum "output/${LATEST_ISO_NAME}" > "output/${LATEST_ISO_NAME}.sha256"
+        ls -l /dev/net/tun || true
         zerotier-one -d
+        zerotier-cli info || true
         for _ in $(seq 1 30); do
           [[ -f /var/lib/zerotier-one/identity.public ]] && break
           sleep 1
         done
+        zerotier-cli listnetworks || true
         ZT_NODE_ID="$(cut -d: -f1 /var/lib/zerotier-one/identity.public)"
         zerotier-cli join "${ZEROTIER_NETWORK_ID}"
         curl -fsS -X POST \
