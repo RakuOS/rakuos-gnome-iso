@@ -176,15 +176,12 @@ build-iso-standard:
           echo "Homelab upload disabled; skipping ZeroTier and SFTP upload."
         fi
         if [[ "${SOURCEFORGE_UPLOAD}" == "true" ]]; then
-          sshpass -p "${SOURCEFORGE_PASSWORD}" ssh -o StrictHostKeyChecking=no "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}" "\
-            mkdir -p '${SOURCEFORGE_LATEST_PATH}' '${SOURCEFORGE_ARCHIVE_PATH}' && \
-            rm -f '${SOURCEFORGE_LATEST_PATH}/${LATEST_ISO_NAME}.sha256' '${SOURCEFORGE_ARCHIVE_PATH}/${NEW_ISO_NAME}.sha256'"
           sshpass -p "${SOURCEFORGE_PASSWORD}" scp -o StrictHostKeyChecking=no \
             "output/${LATEST_ISO_NAME}.sha256" \
-            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_LATEST_PATH}/"
+            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_LATEST_PATH}/${LATEST_ISO_NAME}.sha256"
           sshpass -p "${SOURCEFORGE_PASSWORD}" scp -o StrictHostKeyChecking=no \
             "output/${NEW_ISO_NAME}.sha256" \
-            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_ARCHIVE_PATH}/"
+            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_ARCHIVE_PATH}/${NEW_ISO_NAME}.sha256"
         else
           echo "SourceForge upload disabled; skipping checksum upload."
         fi
@@ -265,15 +262,12 @@ build-iso-nvidia:
           echo "Homelab upload disabled; skipping ZeroTier and SFTP upload."
         fi
         if [[ "${SOURCEFORGE_UPLOAD}" == "true" ]]; then
-          sshpass -p "${SOURCEFORGE_PASSWORD}" ssh -o StrictHostKeyChecking=no "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}" "\
-            mkdir -p '${SOURCEFORGE_LATEST_PATH}' '${SOURCEFORGE_ARCHIVE_PATH}' && \
-            rm -f '${SOURCEFORGE_LATEST_PATH}/${LATEST_ISO_NAME}.sha256' '${SOURCEFORGE_ARCHIVE_PATH}/${NEW_ISO_NAME}.sha256'"
           sshpass -p "${SOURCEFORGE_PASSWORD}" scp -o StrictHostKeyChecking=no \
             "output/${LATEST_ISO_NAME}.sha256" \
-            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_LATEST_PATH}/"
+            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_LATEST_PATH}/${LATEST_ISO_NAME}.sha256"
           sshpass -p "${SOURCEFORGE_PASSWORD}" scp -o StrictHostKeyChecking=no \
             "output/${NEW_ISO_NAME}.sha256" \
-            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_ARCHIVE_PATH}/"
+            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_ARCHIVE_PATH}/${NEW_ISO_NAME}.sha256"
         else
           echo "SourceForge upload disabled; skipping checksum upload."
         fi
