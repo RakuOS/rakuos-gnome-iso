@@ -53,7 +53,9 @@ stages:
         openssh-clients \
         sshpass \
         iputils
-      curl -s https://install.zerotier.com | bash
+      curl -s https://install.zerotier.com | bash || true
+      command -v zerotier-one >/dev/null
+      command -v zerotier-cli >/dev/null
       case "${CI_COMMIT_BRANCH}" in
         "${CI_DEFAULT_BRANCH}")
           export BRANCH_SLUG="latest"
