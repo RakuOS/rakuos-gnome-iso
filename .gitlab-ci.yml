@@ -100,18 +100,14 @@ build-iso-standard:
       mkdir -p output
       if [[ "${IS_STABLE}" == "true" ]]; then
         export NEW_ISO_NAME="rakuos-gnome-${BUILD_DATE}-${PLATFORM}.iso"
-        export LATEST_ISO_NAME="rakuos-gnome-latest-${PLATFORM}.iso"
       else
         export NEW_ISO_NAME="rakuos-gnome-${BRANCH_SLUG}-${BUILD_DATE}-${PLATFORM}.iso"
-        export LATEST_ISO_NAME="rakuos-gnome-${BRANCH_SLUG}-latest-${PLATFORM}.iso"
       fi
       ISO_PATH="output.iso"
       [[ -f titanoboa/output.iso ]] && ISO_PATH="titanoboa/output.iso"
       [[ -f "${ISO_PATH}" ]] || { echo "ERROR: ISO output not found"; ls -la . titanoboa || true; exit 1; }
       mv "${ISO_PATH}" "output/${NEW_ISO_NAME}"
-      cp "output/${NEW_ISO_NAME}" "output/${LATEST_ISO_NAME}"
       sha256sum "output/${NEW_ISO_NAME}" > "output/${NEW_ISO_NAME}.sha256"
-      sha256sum "output/${LATEST_ISO_NAME}" > "output/${LATEST_ISO_NAME}.sha256"
   artifacts:
     name: "rakuos-gnome-${CI_COMMIT_REF_SLUG}-standard-${CI_PIPELINE_ID}"
     paths:
@@ -139,18 +135,14 @@ build-iso-nvidia:
       mkdir -p output
       if [[ "${IS_STABLE}" == "true" ]]; then
         export NEW_ISO_NAME="rakuos-gnome-nvidia-${BUILD_DATE}-${PLATFORM}.iso"
-        export LATEST_ISO_NAME="rakuos-gnome-nvidia-latest-${PLATFORM}.iso"
       else
         export NEW_ISO_NAME="rakuos-gnome-nvidia-${BRANCH_SLUG}-${BUILD_DATE}-${PLATFORM}.iso"
-        export LATEST_ISO_NAME="rakuos-gnome-nvidia-${BRANCH_SLUG}-latest-${PLATFORM}.iso"
       fi
       ISO_PATH="output.iso"
       [[ -f titanoboa/output.iso ]] && ISO_PATH="titanoboa/output.iso"
       [[ -f "${ISO_PATH}" ]] || { echo "ERROR: ISO output not found"; ls -la . titanoboa || true; exit 1; }
       mv "${ISO_PATH}" "output/${NEW_ISO_NAME}"
-      cp "output/${NEW_ISO_NAME}" "output/${LATEST_ISO_NAME}"
       sha256sum "output/${NEW_ISO_NAME}" > "output/${NEW_ISO_NAME}.sha256"
-      sha256sum "output/${LATEST_ISO_NAME}" > "output/${LATEST_ISO_NAME}.sha256"
   artifacts:
     name: "rakuos-gnome-${CI_COMMIT_REF_SLUG}-nvidia-${CI_PIPELINE_ID}"
     paths:
