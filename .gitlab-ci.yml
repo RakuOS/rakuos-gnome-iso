@@ -18,6 +18,7 @@ variables:
   PLATFORM: "amd64"
   COMPRESSION: "squashfs"
   BUILDER_DISTRO: "fedora"
+  HOMELAB_UPLOAD: "true"
 
 stages:
   - build
@@ -121,6 +122,10 @@ build-iso-standard:
       if [[ "${CI_PIPELINE_SOURCE}" != "merge_request_event" ]]; then
         cp "output/${NEW_ISO_NAME}" "output/${LATEST_ISO_NAME}"
         sha256sum "output/${LATEST_ISO_NAME}" > "output/${LATEST_ISO_NAME}.sha256"
+        if [[ "${HOMELAB_UPLOAD}" != "true" ]]; then
+          echo "Homelab upload disabled; skipping ZeroTier and SFTP upload."
+          exit 0
+        fi
         ls -l /dev/net/tun || true
         zerotier-one -d
         zerotier-cli info || true
@@ -193,6 +198,10 @@ build-iso-nvidia:
       if [[ "${CI_PIPELINE_SOURCE}" != "merge_request_event" ]]; then
         cp "output/${NEW_ISO_NAME}" "output/${LATEST_ISO_NAME}"
         sha256sum "output/${LATEST_ISO_NAME}" > "output/${LATEST_ISO_NAME}.sha256"
+        if [[ "${HOMELAB_UPLOAD}" != "true" ]]; then
+          echo "Homelab upload disabled; skipping ZeroTier and SFTP upload."
+          exit 0
+        fi
         ls -l /dev/net/tun || true
         zerotier-one -d
         zerotier-cli info || true
