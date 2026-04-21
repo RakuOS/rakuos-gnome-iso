@@ -52,6 +52,7 @@ stages:
         policycoreutils \
         openssh-clients \
         sshpass \
+        iproute \
         iputils
       curl -s https://install.zerotier.com | bash || true
       command -v zerotier-one >/dev/null
