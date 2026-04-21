@@ -1,17 +1,17 @@
 spec:
   inputs:
-    homelab-upload:
-      description: "Upload built ISOs to the homelab over ZeroTier and SFTP"
-      options:
-        - "true"
-        - "false"
-      default: "true"
-    sourceforge-upload:
-      description: "Upload checksum test files to SourceForge"
+    rakuos-server-upload:
+      description: "Upload built ISOs to the RakuOS server over ZeroTier and SFTP"
       options:
         - "true"
         - "false"
       default: "false"
+    sourceforge-upload:
+      description: "Upload built ISOs to SourceForge"
+      options:
+        - "true"
+        - "false"
+      default: "true"
 ---
 # ============================================================
 # RakuOS GNOME ISO — GitLab CI/CD Pipeline
@@ -28,12 +28,13 @@ workflow:
 
 variables:
   IMAGE_REPO: "registry.gitlab.com/rakuos/images/rakuos-gnome"
-  TITANOBOA_REPO: "https://gitlab.com/rakuos/iso/titanoboa.git"
+  TITANOBOA_REPO: "https://gitlab.com/rakuos/iso/rakuos-forge.git"
   TITANOBOA_REF: "main"
   PLATFORM: "amd64"
   COMPRESSION: "squashfs"
+  JOB_IMAGE: "quay.io/fedora/fedora:latest"
   BUILDER_DISTRO: "fedora"
-  HOMELAB_UPLOAD: "$[[ inputs.homelab-upload ]]"
+  RAKUOS_SERVER_UPLOAD: "$[[ inputs.rakuos-server-upload ]]"
   SOURCEFORGE_UPLOAD: "$[[ inputs.sourceforge-upload ]]"
   SOURCEFORGE_ARCHIVE_PATH: "${SOURCEFORGE_ARCHIVE_ROOT}/GNOME"
 
@@ -41,7 +42,7 @@ stages:
   - build
 
 .iso-job:
-  image: quay.io/fedora/fedora:latest
+  image: $JOB_IMAGE
   tags:
     - saas-linux-2xlarge-amd64
   before_script:
@@ -100,6 +101,10 @@ stages:
       export BUILD_DATE="$(date -u +%Y.%m.%d)"
       echo "Using image tag: ${BRANCH_SLUG}"
   rules:
+    - if: '$CI_COMMIT_BRANCH == "rakuosel"'
+      variables:
+        JOB_IMAGE: "quay.io/centos/centos:stream10"
+        BUILDER_DISTRO: "centos"
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
     - if: '$CI_COMMIT_BRANCH == "staging"'
@@ -113,16 +118,11 @@ build-iso-standard:
     - |
       set -euo pipefail
       export IMAGE_REF="${IMAGE_REPO}:${BRANCH_SLUG}"
-      git clone --depth 1 --branch "${TITANOBOA_REF}" "${TITANOBOA_REPO}" titanoboa
-      sed -i 's/--rm -it \\/--rm -i --network host \\/g' titanoboa/Justfile
-      sed -i 's/BUILDER="$(iso_dependencies)"/BUILDER="0"/' titanoboa/Justfile
-      sed -i 's|-o /app/output.iso|-o ./output.iso|' titanoboa/Justfile
-      awk '{ if ($0 == "    mv ./output.iso {{ justfile_dir() }} &>/dev/null") print "    true"; else print $0 }' titanoboa/Justfile > titanoboa/Justfile.tmp
-      mv titanoboa/Justfile.tmp titanoboa/Justfile
+      git clone --depth 1 --branch "${TITANOBOA_REF}" "${TITANOBOA_REPO}" rakuos-forge
       export TITANOBOA_BUILDER_DISTRO="${BUILDER_DISTRO}"
       export HOOK_post_rootfs="${CI_PROJECT_DIR}/config/configure-iso.sh"
       export HOOK_pre_initramfs="${CI_PROJECT_DIR}/config/pre_initramfs.sh"
-      just -f titanoboa/Justfile build "${IMAGE_REF}" 1 none "${COMPRESSION}" NONE "${IMAGE_REF}" 1
+      just -f rakuos-forge/Justfile build "${IMAGE_REF}" 1 none "${COMPRESSION}" NONE "${IMAGE_REF}" 1
       mkdir -p output
       if [[ "${IS_STABLE}" == "true" ]]; then
         export NEW_ISO_NAME="rakuos-gnome-${BUILD_DATE}-${PLATFORM}.iso"
@@ -132,14 +132,14 @@ build-iso-standard:
         export LATEST_ISO_NAME="rakuos-gnome-${BRANCH_SLUG}-latest-${PLATFORM}.iso"
       fi
       ISO_PATH="output.iso"
-      [[ -f titanoboa/output.iso ]] && ISO_PATH="titanoboa/output.iso"
-      [[ -f "${ISO_PATH}" ]] || { echo "ERROR: ISO output not found"; ls -la . titanoboa || true; exit 1; }
+      [[ -f rakuos-forge/output.iso ]] && ISO_PATH="rakuos-forge/output.iso"
+      [[ -f "${ISO_PATH}" ]] || { echo "ERROR: ISO output not found"; ls -la . rakuos-forge || true; exit 1; }
       mv "${ISO_PATH}" "output/${NEW_ISO_NAME}"
       sha256sum "output/${NEW_ISO_NAME}" > "output/${NEW_ISO_NAME}.sha256"
       if [[ "${CI_PIPELINE_SOURCE}" != "merge_request_event" ]]; then
         cp "output/${NEW_ISO_NAME}" "output/${LATEST_ISO_NAME}"
         sha256sum "output/${LATEST_ISO_NAME}" > "output/${LATEST_ISO_NAME}.sha256"
-        if [[ "${HOMELAB_UPLOAD}" == "true" ]]; then
+        if [[ "${RAKUOS_SERVER_UPLOAD}" == "true" ]]; then
           ls -l /dev/net/tun || true
           zerotier-one -d
           zerotier-cli info || true
@@ -165,25 +165,23 @@ build-iso-standard:
           sshpass -p "${SFTP_PASSWORD}" ssh -o StrictHostKeyChecking=no "${SFTP_USERNAME}@${SFTP_HOST}" "\
             mkdir -p '${SFTP_TARGET}' && \
             cd '${SFTP_TARGET}' && \
-            rm -f '${NEW_ISO_NAME}' '${NEW_ISO_NAME}.sha256' '${LATEST_ISO_NAME}' '${LATEST_ISO_NAME}.sha256'"
+            rm -f '${NEW_ISO_NAME}' '${LATEST_ISO_NAME}'"
           sshpass -p "${SFTP_PASSWORD}" scp -o StrictHostKeyChecking=no \
             "output/${NEW_ISO_NAME}" \
-            "output/${NEW_ISO_NAME}.sha256" \
             "output/${LATEST_ISO_NAME}" \
-            "output/${LATEST_ISO_NAME}.sha256" \
             "${SFTP_USERNAME}@${SFTP_HOST}:${SFTP_TARGET}/"
         else
-          echo "Homelab upload disabled; skipping ZeroTier and SFTP upload."
+          echo "RakuOS server upload disabled; skipping ZeroTier and SFTP upload."
         fi
         if [[ "${SOURCEFORGE_UPLOAD}" == "true" ]]; then
           sshpass -p "${SOURCEFORGE_PASSWORD}" scp -o StrictHostKeyChecking=no \
-            "output/${LATEST_ISO_NAME}.sha256" \
-            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_LATEST_PATH}/${LATEST_ISO_NAME}.sha256"
+            "output/${LATEST_ISO_NAME}" \
+            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_LATEST_PATH}/${LATEST_ISO_NAME}"
           sshpass -p "${SOURCEFORGE_PASSWORD}" scp -o StrictHostKeyChecking=no \
-            "output/${NEW_ISO_NAME}.sha256" \
-            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_ARCHIVE_PATH}/${NEW_ISO_NAME}.sha256"
+            "output/${NEW_ISO_NAME}" \
+            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_ARCHIVE_PATH}/${NEW_ISO_NAME}"
         else
-          echo "SourceForge upload disabled; skipping checksum upload."
+          echo "SourceForge upload disabled; skipping ISO upload."
         fi
       fi
   artifacts:
@@ -199,16 +197,11 @@ build-iso-nvidia:
     - |
       set -euo pipefail
       export IMAGE_REF="${IMAGE_REPO}/nvidia:${BRANCH_SLUG}"
-      git clone --depth 1 --branch "${TITANOBOA_REF}" "${TITANOBOA_REPO}" titanoboa
-      sed -i 's/--rm -it \\/--rm -i --network host \\/g' titanoboa/Justfile
-      sed -i 's/BUILDER="$(iso_dependencies)"/BUILDER="0"/' titanoboa/Justfile
-      sed -i 's|-o /app/output.iso|-o ./output.iso|' titanoboa/Justfile
-      awk '{ if ($0 == "    mv ./output.iso {{ justfile_dir() }} &>/dev/null") print "    true"; else print $0 }' titanoboa/Justfile > titanoboa/Justfile.tmp
-      mv titanoboa/Justfile.tmp titanoboa/Justfile
+      git clone --depth 1 --branch "${TITANOBOA_REF}" "${TITANOBOA_REPO}" rakuos-forge
       export TITANOBOA_BUILDER_DISTRO="${BUILDER_DISTRO}"
       export HOOK_post_rootfs="${CI_PROJECT_DIR}/config/configure-iso.sh"
       export HOOK_pre_initramfs="${CI_PROJECT_DIR}/config/pre_initramfs.sh"
-      just -f titanoboa/Justfile build "${IMAGE_REF}" 1 none "${COMPRESSION}" NONE "${IMAGE_REF}" 1
+      just -f rakuos-forge/Justfile build "${IMAGE_REF}" 1 none "${COMPRESSION}" NONE "${IMAGE_REF}" 1
       mkdir -p output
       if [[ "${IS_STABLE}" == "true" ]]; then
         export NEW_ISO_NAME="rakuos-gnome-nvidia-${BUILD_DATE}-${PLATFORM}.iso"
@@ -218,14 +211,14 @@ build-iso-nvidia:
         export LATEST_ISO_NAME="rakuos-gnome-nvidia-${BRANCH_SLUG}-latest-${PLATFORM}.iso"
       fi
       ISO_PATH="output.iso"
-      [[ -f titanoboa/output.iso ]] && ISO_PATH="titanoboa/output.iso"
-      [[ -f "${ISO_PATH}" ]] || { echo "ERROR: ISO output not found"; ls -la . titanoboa || true; exit 1; }
+      [[ -f rakuos-forge/output.iso ]] && ISO_PATH="rakuos-forge/output.iso"
+      [[ -f "${ISO_PATH}" ]] || { echo "ERROR: ISO output not found"; ls -la . rakuos-forge || true; exit 1; }
       mv "${ISO_PATH}" "output/${NEW_ISO_NAME}"
       sha256sum "output/${NEW_ISO_NAME}" > "output/${NEW_ISO_NAME}.sha256"
       if [[ "${CI_PIPELINE_SOURCE}" != "merge_request_event" ]]; then
         cp "output/${NEW_ISO_NAME}" "output/${LATEST_ISO_NAME}"
         sha256sum "output/${LATEST_ISO_NAME}" > "output/${LATEST_ISO_NAME}.sha256"
-        if [[ "${HOMELAB_UPLOAD}" == "true" ]]; then
+        if [[ "${RAKUOS_SERVER_UPLOAD}" == "true" ]]; then
           ls -l /dev/net/tun || true
           zerotier-one -d
           zerotier-cli info || true
@@ -251,25 +244,23 @@ build-iso-nvidia:
           sshpass -p "${SFTP_PASSWORD}" ssh -o StrictHostKeyChecking=no "${SFTP_USERNAME}@${SFTP_HOST}" "\
             mkdir -p '${SFTP_TARGET}' && \
             cd '${SFTP_TARGET}' && \
-            rm -f '${NEW_ISO_NAME}' '${NEW_ISO_NAME}.sha256' '${LATEST_ISO_NAME}' '${LATEST_ISO_NAME}.sha256'"
+            rm -f '${NEW_ISO_NAME}' '${LATEST_ISO_NAME}'"
           sshpass -p "${SFTP_PASSWORD}" scp -o StrictHostKeyChecking=no \
             "output/${NEW_ISO_NAME}" \
-            "output/${NEW_ISO_NAME}.sha256" \
             "output/${LATEST_ISO_NAME}" \
-            "output/${LATEST_ISO_NAME}.sha256" \
             "${SFTP_USERNAME}@${SFTP_HOST}:${SFTP_TARGET}/"
         else
-          echo "Homelab upload disabled; skipping ZeroTier and SFTP upload."
+          echo "RakuOS server upload disabled; skipping ZeroTier and SFTP upload."
         fi
         if [[ "${SOURCEFORGE_UPLOAD}" == "true" ]]; then
           sshpass -p "${SOURCEFORGE_PASSWORD}" scp -o StrictHostKeyChecking=no \
-            "output/${LATEST_ISO_NAME}.sha256" \
-            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_LATEST_PATH}/${LATEST_ISO_NAME}.sha256"
+            "output/${LATEST_ISO_NAME}" \
+            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_LATEST_PATH}/${LATEST_ISO_NAME}"
           sshpass -p "${SOURCEFORGE_PASSWORD}" scp -o StrictHostKeyChecking=no \
-            "output/${NEW_ISO_NAME}.sha256" \
-            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_ARCHIVE_PATH}/${NEW_ISO_NAME}.sha256"
+            "output/${NEW_ISO_NAME}" \
+            "${SOURCEFORGE_USERNAME}@${SOURCEFORGE_HOST}:${SOURCEFORGE_ARCHIVE_PATH}/${NEW_ISO_NAME}"
         else
-          echo "SourceForge upload disabled; skipping checksum upload."
+          echo "SourceForge upload disabled; skipping ISO upload."
         fi
       fi
   artifacts:
