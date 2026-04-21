@@ -34,6 +34,7 @@ stages:
         just \
         podman \
         jq \
+        curl \
         findutils \
         tar \
         xorriso \
@@ -48,7 +49,11 @@ stages:
         shim \
         squashfs-tools \
         erofs-utils \
-        policycoreutils
+        policycoreutils \
+        zerotier-one \
+        openssh-clients \
+        sshpass \
+        iputils
       case "${CI_COMMIT_BRANCH}" in
         "${CI_DEFAULT_BRANCH}")
           export BRANCH_SLUG="latest"
@@ -100,18 +105,52 @@ build-iso-standard:
       mkdir -p output
       if [[ "${IS_STABLE}" == "true" ]]; then
         export NEW_ISO_NAME="rakuos-gnome-${BUILD_DATE}-${PLATFORM}.iso"
+        export LATEST_ISO_NAME="rakuos-gnome-latest-${PLATFORM}.iso"
       else
         export NEW_ISO_NAME="rakuos-gnome-${BRANCH_SLUG}-${BUILD_DATE}-${PLATFORM}.iso"
+        export LATEST_ISO_NAME="rakuos-gnome-${BRANCH_SLUG}-latest-${PLATFORM}.iso"
       fi
       ISO_PATH="output.iso"
       [[ -f titanoboa/output.iso ]] && ISO_PATH="titanoboa/output.iso"
       [[ -f "${ISO_PATH}" ]] || { echo "ERROR: ISO output not found"; ls -la . titanoboa || true; exit 1; }
       mv "${ISO_PATH}" "output/${NEW_ISO_NAME}"
       sha256sum "output/${NEW_ISO_NAME}" > "output/${NEW_ISO_NAME}.sha256"
+      if [[ "${CI_PIPELINE_SOURCE}" != "merge_request_event" ]]; then
+        cp "output/${NEW_ISO_NAME}" "output/${LATEST_ISO_NAME}"
+        sha256sum "output/${LATEST_ISO_NAME}" > "output/${LATEST_ISO_NAME}.sha256"
+        zerotier-one -d
+        for _ in $(seq 1 30); do
+          [[ -f /var/lib/zerotier-one/identity.public ]] && break
+          sleep 1
+        done
+        ZT_NODE_ID="$(cut -d: -f1 /var/lib/zerotier-one/identity.public)"
+        zerotier-cli join "${ZEROTIER_NETWORK_ID}"
+        curl -fsS -X POST \
+          -H "Authorization: token ${ZEROTIER_CENTRAL_TOKEN}" \
+          -H "Content-Type: application/json" \
+          --data '{"config":{"authorized":true}}' \
+          "https://api.zerotier.com/api/v1/network/${ZEROTIER_NETWORK_ID}/member/${ZT_NODE_ID}"
+        for _ in $(seq 1 30); do
+          zerotier-cli listnetworks | grep -q "${ZEROTIER_NETWORK_ID}.*OK" && break
+          sleep 2
+        done
+        sleep 10
+        ip addr show
+        ping -c 3 "${SFTP_HOST}"
+        sshpass -p "${SFTP_PASSWORD}" ssh -o StrictHostKeyChecking=no "${SFTP_USERNAME}@${SFTP_HOST}" "\
+          mkdir -p '${SFTP_TARGET}' && \
+          cd '${SFTP_TARGET}' && \
+          rm -f '${NEW_ISO_NAME}' '${NEW_ISO_NAME}.sha256' '${LATEST_ISO_NAME}' '${LATEST_ISO_NAME}.sha256'"
+        sshpass -p "${SFTP_PASSWORD}" scp -o StrictHostKeyChecking=no \
+          "output/${NEW_ISO_NAME}" \
+          "output/${NEW_ISO_NAME}.sha256" \
+          "output/${LATEST_ISO_NAME}" \
+          "output/${LATEST_ISO_NAME}.sha256" \
+          "${SFTP_USERNAME}@${SFTP_HOST}:${SFTP_TARGET}/"
+      fi
   artifacts:
     name: "rakuos-gnome-${CI_COMMIT_REF_SLUG}-standard-${CI_PIPELINE_ID}"
     paths:
-      - output/*.iso
       - output/*.sha256
     expire_in: 7 days
 
@@ -135,17 +174,51 @@ build-iso-nvidia:
       mkdir -p output
       if [[ "${IS_STABLE}" == "true" ]]; then
         export NEW_ISO_NAME="rakuos-gnome-nvidia-${BUILD_DATE}-${PLATFORM}.iso"
+        export LATEST_ISO_NAME="rakuos-gnome-nvidia-latest-${PLATFORM}.iso"
       else
         export NEW_ISO_NAME="rakuos-gnome-nvidia-${BRANCH_SLUG}-${BUILD_DATE}-${PLATFORM}.iso"
+        export LATEST_ISO_NAME="rakuos-gnome-nvidia-${BRANCH_SLUG}-latest-${PLATFORM}.iso"
       fi
       ISO_PATH="output.iso"
       [[ -f titanoboa/output.iso ]] && ISO_PATH="titanoboa/output.iso"
       [[ -f "${ISO_PATH}" ]] || { echo "ERROR: ISO output not found"; ls -la . titanoboa || true; exit 1; }
       mv "${ISO_PATH}" "output/${NEW_ISO_NAME}"
       sha256sum "output/${NEW_ISO_NAME}" > "output/${NEW_ISO_NAME}.sha256"
+      if [[ "${CI_PIPELINE_SOURCE}" != "merge_request_event" ]]; then
+        cp "output/${NEW_ISO_NAME}" "output/${LATEST_ISO_NAME}"
+        sha256sum "output/${LATEST_ISO_NAME}" > "output/${LATEST_ISO_NAME}.sha256"
+        zerotier-one -d
+        for _ in $(seq 1 30); do
+          [[ -f /var/lib/zerotier-one/identity.public ]] && break
+          sleep 1
+        done
+        ZT_NODE_ID="$(cut -d: -f1 /var/lib/zerotier-one/identity.public)"
+        zerotier-cli join "${ZEROTIER_NETWORK_ID}"
+        curl -fsS -X POST \
+          -H "Authorization: token ${ZEROTIER_CENTRAL_TOKEN}" \
+          -H "Content-Type: application/json" \
+          --data '{"config":{"authorized":true}}' \
+          "https://api.zerotier.com/api/v1/network/${ZEROTIER_NETWORK_ID}/member/${ZT_NODE_ID}"
+        for _ in $(seq 1 30); do
+          zerotier-cli listnetworks | grep -q "${ZEROTIER_NETWORK_ID}.*OK" && break
+          sleep 2
+        done
+        sleep 10
+        ip addr show
+        ping -c 3 "${SFTP_HOST}"
+        sshpass -p "${SFTP_PASSWORD}" ssh -o StrictHostKeyChecking=no "${SFTP_USERNAME}@${SFTP_HOST}" "\
+          mkdir -p '${SFTP_TARGET}' && \
+          cd '${SFTP_TARGET}' && \
+          rm -f '${NEW_ISO_NAME}' '${NEW_ISO_NAME}.sha256' '${LATEST_ISO_NAME}' '${LATEST_ISO_NAME}.sha256'"
+        sshpass -p "${SFTP_PASSWORD}" scp -o StrictHostKeyChecking=no \
+          "output/${NEW_ISO_NAME}" \
+          "output/${NEW_ISO_NAME}.sha256" \
+          "output/${LATEST_ISO_NAME}" \
+          "output/${LATEST_ISO_NAME}.sha256" \
+          "${SFTP_USERNAME}@${SFTP_HOST}:${SFTP_TARGET}/"
+      fi
   artifacts:
     name: "rakuos-gnome-${CI_COMMIT_REF_SLUG}-nvidia-${CI_PIPELINE_ID}"
     paths:
-      - output/*.iso
       - output/*.sha256
     expire_in: 7 days
