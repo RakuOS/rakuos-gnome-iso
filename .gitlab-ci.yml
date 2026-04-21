@@ -50,10 +50,10 @@ stages:
         squashfs-tools \
         erofs-utils \
         policycoreutils \
-        zerotier-one \
         openssh-clients \
         sshpass \
         iputils
+      curl -s https://install.zerotier.com | bash
       case "${CI_COMMIT_BRANCH}" in
         "${CI_DEFAULT_BRANCH}")
           export BRANCH_SLUG="latest"
