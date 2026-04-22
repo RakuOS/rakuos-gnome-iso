@@ -203,9 +203,7 @@ echo "Copying GNOME-specific system files..."
 cp -a /root/packages/installer/system_files/gnome/. /
 
 # Don't start the fedora-welcome app (gnome only)
-if [[ $desktop_env == gnome ]]; then
-    sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nHidden=true@g' /usr/share/anaconda/gnome/org.fedoraproject.welcome-screen.desktop || :
-fi
+sed -i 's@\[Desktop Entry\]@\[Desktop Entry\]\nHidden=true@g' /usr/share/anaconda/gnome/org.fedoraproject.welcome-screen.desktop || :
 
 ###############################
 #remove rakuos-welcome automatic launch for live environment
