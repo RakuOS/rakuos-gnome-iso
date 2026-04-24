@@ -4,6 +4,17 @@ set -exo pipefail
 
 source /etc/os-release
 
+# Import Terra keys
+    echo "RakuOS overlay sync: importing Terra GPG keys for Fedora ${fedora_version}..."
+    rpm --import "https://repos.fyralabs.com/terra${VERSION_ID}/key.asc"
+    rpm --import "https://repos.fyralabs.com/terra${VERSION_ID}-mesa/key.asc"
+    rpm --import "https://repos.fyralabs.com/terra${VERSION_ID}-multimedia/key.asc"
+    #rpm --import "https://repos.fyralabs.com/terra${VERSION_ID}-nvidia/key.asc"
+
+# Disable overlay services in live enviroment
+systemctl disable --now rakuos-overlay-sync.service \
+          rakuos-overlay-setup.service
+
 # Remove all versionlocks, in order to avoid dependency issues
 dnf -qy versionlock clear
 
@@ -26,6 +37,17 @@ dnf install -y --refresh "${PACKAGES[@]}"
 
 # Utilities for displaying a dialog prompting users to review secure boot documentation
 dnf install -qy --setopt=install_weak_deps=0 qrencode yad
+
+# The installed image already carries the real prebaked overlay state.
+# For the live squashfs, wipe that state back out so the live environment stays
+# simple and does not try to carry a prebaked installed-system overlay around.
+echo "Resetting RakuOS overlay state for live ISO..."
+rm -rf /var/lib/rakuos
+mkdir -p /var/lib/rakuos
+if [[ -f /usr/share/rakuos/packages-live.list ]]; then
+    cp /usr/share/rakuos/packages-live.list /var/lib/rakuos/packages.list
+    sed -i -e '$a\' /var/lib/rakuos/packages.list
+fi
 
 # Variables
 imageref="$(podman images --format '{{ index .Names 0 }}\n' 'rakuos*' | head -1)"
