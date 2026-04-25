@@ -93,6 +93,10 @@ stages:
           export BRANCH_SLUG="staging"
           export IS_STABLE="false"
           ;;
+        "next")
+          export BRANCH_SLUG="next"
+          export IS_STABLE="false"
+          ;;
         "rawhide")
           export BRANCH_SLUG="rawhide"
           export IS_STABLE="false"
