@@ -191,7 +191,7 @@ build-iso-standard:
         else
           echo "RakuOS server upload disabled; skipping ZeroTier and SFTP upload."
         fi
-        if [[ "${CDN77_UPLOAD}" == "true" ]] && [[ "${IS_STABLE}" == "true" ]]; then
+        if [[ "${CDN77_UPLOAD}" == "true" ]] && { [[ "${IS_STABLE}" == "true" ]] || [[ "${BRANCH_SLUG}" == "staging" ]]; }; then
           echo "Uploading latest ISO to CDN77 (dl.rakuos.org/${CDN77_PATH})..."
           AWS_ACCESS_KEY_ID="${CDN77_ACCESS_KEY}" AWS_SECRET_ACCESS_KEY="${CDN77_SECRET_KEY}" \
             aws s3 cp "output/${LATEST_ISO_NAME}" \
@@ -284,7 +284,7 @@ build-iso-nvidia:
         else
           echo "RakuOS server upload disabled; skipping ZeroTier and SFTP upload."
         fi
-        if [[ "${CDN77_UPLOAD}" == "true" ]] && [[ "${IS_STABLE}" == "true" ]]; then
+        if [[ "${CDN77_UPLOAD}" == "true" ]] && { [[ "${IS_STABLE}" == "true" ]] || [[ "${BRANCH_SLUG}" == "staging" ]]; }; then
           echo "Uploading latest ISO to CDN77 (dl.rakuos.org/${CDN77_PATH})..."
           AWS_ACCESS_KEY_ID="${CDN77_ACCESS_KEY}" AWS_SECRET_ACCESS_KEY="${CDN77_SECRET_KEY}" \
             aws s3 cp "output/${LATEST_ISO_NAME}" \
