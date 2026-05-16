@@ -12,6 +12,12 @@ spec:
         - "true"
         - "false"
       default: "true"
+    cdn77-upload:
+      description: "Upload latest ISOs to CDN77 (dl.rakuos.org) — stable branch only"
+      options:
+        - "true"
+        - "false"
+      default: "true"
 ---
 # ============================================================
 # RakuOS GNOME ISO — GitLab CI/CD Pipeline
@@ -45,6 +51,8 @@ variables:
   RAKUOS_SERVER_UPLOAD: "$[[ inputs.rakuos-server-upload ]]"
   SOURCEFORGE_UPLOAD: "$[[ inputs.sourceforge-upload ]]"
   SOURCEFORGE_ARCHIVE_PATH: "${SOURCEFORGE_ARCHIVE_ROOT}/GNOME"
+  CDN77_UPLOAD: "$[[ inputs.cdn77-upload ]]"
+  CDN77_PATH: "gnome"
 
 stages:
   - build
@@ -80,7 +88,8 @@ stages:
         openssh-clients \
         sshpass \
         iproute \
-        iputils
+        iputils \
+        awscli
       curl -s https://install.zerotier.com | bash || true
       command -v zerotier-one >/dev/null
       command -v zerotier-cli >/dev/null
@@ -91,6 +100,10 @@ stages:
           ;;
         "staging")
           export BRANCH_SLUG="staging"
+          export IS_STABLE="false"
+          ;;
+        "next")
+          export BRANCH_SLUG="next"
           export IS_STABLE="false"
           ;;
         "rawhide")
@@ -112,6 +125,7 @@ stages:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
     - if: '$CI_COMMIT_BRANCH == "staging"'
+    - if: '$CI_COMMIT_BRANCH == "next"'
     - if: '$CI_COMMIT_BRANCH == "rawhide"'
     - if: '$CI_COMMIT_BRANCH == "rakuosel"'
 
@@ -176,6 +190,20 @@ build-iso-standard:
             "${SFTP_USERNAME}@${SFTP_HOST}:${SFTP_TARGET}/"
         else
           echo "RakuOS server upload disabled; skipping ZeroTier and SFTP upload."
+        fi
+        if [[ "${CDN77_UPLOAD}" == "true" ]] && { [[ "${IS_STABLE}" == "true" ]] || [[ "${BRANCH_SLUG}" == "staging" ]]; }; then
+          echo "Uploading latest ISO to CDN77 (dl.rakuos.org/${CDN77_PATH})..."
+          AWS_ACCESS_KEY_ID="${CDN77_ACCESS_KEY}" AWS_SECRET_ACCESS_KEY="${CDN77_SECRET_KEY}" \
+            aws s3 cp "output/${LATEST_ISO_NAME}" \
+              "s3://${CDN77_BUCKET}/${CDN77_PATH}/${LATEST_ISO_NAME}" \
+              --endpoint-url "${CDN77_ENDPOINT_URL}" --no-progress
+          AWS_ACCESS_KEY_ID="${CDN77_ACCESS_KEY}" AWS_SECRET_ACCESS_KEY="${CDN77_SECRET_KEY}" \
+            aws s3 cp "output/${LATEST_ISO_NAME}.sha256" \
+              "s3://${CDN77_BUCKET}/${CDN77_PATH}/${LATEST_ISO_NAME}.sha256" \
+              --endpoint-url "${CDN77_ENDPOINT_URL}" --no-progress
+          echo "CDN77 upload complete."
+        else
+          echo "CDN77 upload disabled or non-stable branch; skipping."
         fi
         if [[ "${SOURCEFORGE_UPLOAD}" == "true" ]]; then
           sshpass -p "${SOURCEFORGE_PASSWORD}" scp -o StrictHostKeyChecking=no \
@@ -255,6 +283,20 @@ build-iso-nvidia:
             "${SFTP_USERNAME}@${SFTP_HOST}:${SFTP_TARGET}/"
         else
           echo "RakuOS server upload disabled; skipping ZeroTier and SFTP upload."
+        fi
+        if [[ "${CDN77_UPLOAD}" == "true" ]] && { [[ "${IS_STABLE}" == "true" ]] || [[ "${BRANCH_SLUG}" == "staging" ]]; }; then
+          echo "Uploading latest ISO to CDN77 (dl.rakuos.org/${CDN77_PATH})..."
+          AWS_ACCESS_KEY_ID="${CDN77_ACCESS_KEY}" AWS_SECRET_ACCESS_KEY="${CDN77_SECRET_KEY}" \
+            aws s3 cp "output/${LATEST_ISO_NAME}" \
+              "s3://${CDN77_BUCKET}/${CDN77_PATH}/${LATEST_ISO_NAME}" \
+              --endpoint-url "${CDN77_ENDPOINT_URL}" --no-progress
+          AWS_ACCESS_KEY_ID="${CDN77_ACCESS_KEY}" AWS_SECRET_ACCESS_KEY="${CDN77_SECRET_KEY}" \
+            aws s3 cp "output/${LATEST_ISO_NAME}.sha256" \
+              "s3://${CDN77_BUCKET}/${CDN77_PATH}/${LATEST_ISO_NAME}.sha256" \
+              --endpoint-url "${CDN77_ENDPOINT_URL}" --no-progress
+          echo "CDN77 upload complete."
+        else
+          echo "CDN77 upload disabled or non-stable branch; skipping."
         fi
         if [[ "${SOURCEFORGE_UPLOAD}" == "true" ]]; then
           sshpass -p "${SOURCEFORGE_PASSWORD}" scp -o StrictHostKeyChecking=no \
