@@ -192,6 +192,13 @@ build-iso-standard:
           echo "RakuOS server upload disabled; skipping ZeroTier and SFTP upload."
         fi
         if [[ "${CDN77_UPLOAD}" == "true" ]] && { [[ "${IS_STABLE}" == "true" ]] || [[ "${BRANCH_SLUG}" == "staging" ]]; }; then
+          echo "Purging CDN77 cache for ${CDN77_PATH}/${LATEST_ISO_NAME}..."
+          curl -fsS -X POST "https://api.cdn77.com/v3/cdn/${CDN77_CDN_ID}/job/purge/paths" \
+            -H "Authorization: Bearer ${CDN77_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{\"paths\": [\"/${CDN77_PATH}/${LATEST_ISO_NAME}\", \"/${CDN77_PATH}/${LATEST_ISO_NAME}.sha256\"]}" || true
+          echo "Waiting 120s for CDN cache to clear..."
+          sleep 120
           echo "Uploading latest ISO to CDN77 (dl.rakuos.org/${CDN77_PATH})..."
           AWS_ACCESS_KEY_ID="${CDN77_ACCESS_KEY}" AWS_SECRET_ACCESS_KEY="${CDN77_SECRET_KEY}" \
             aws s3 cp "output/${LATEST_ISO_NAME}" \
@@ -285,6 +292,13 @@ build-iso-nvidia:
           echo "RakuOS server upload disabled; skipping ZeroTier and SFTP upload."
         fi
         if [[ "${CDN77_UPLOAD}" == "true" ]] && { [[ "${IS_STABLE}" == "true" ]] || [[ "${BRANCH_SLUG}" == "staging" ]]; }; then
+          echo "Purging CDN77 cache for ${CDN77_PATH}/${LATEST_ISO_NAME}..."
+          curl -fsS -X POST "https://api.cdn77.com/v3/cdn/${CDN77_CDN_ID}/job/purge/paths" \
+            -H "Authorization: Bearer ${CDN77_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{\"paths\": [\"/${CDN77_PATH}/${LATEST_ISO_NAME}\", \"/${CDN77_PATH}/${LATEST_ISO_NAME}.sha256\"]}" || true
+          echo "Waiting 120s for CDN cache to clear..."
+          sleep 120
           echo "Uploading latest ISO to CDN77 (dl.rakuos.org/${CDN77_PATH})..."
           AWS_ACCESS_KEY_ID="${CDN77_ACCESS_KEY}" AWS_SECRET_ACCESS_KEY="${CDN77_SECRET_KEY}" \
             aws s3 cp "output/${LATEST_ISO_NAME}" \
