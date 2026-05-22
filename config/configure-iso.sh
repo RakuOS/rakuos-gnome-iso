@@ -62,6 +62,9 @@ imageref="$(podman images --format '{{ index .Names 0 }}\n' 'rakuos*' | head -1)
 imageref="${imageref##*://}"
 imageref="${imageref%%:*}"
 imagetag="$(podman images --format '{{ .Tag }}\n' "$imageref" | head -1)"
+SECUREBOOT_KEY="/usr/share/rakuos/sb_pubkey.der"
+SECUREBOOT_DOC_URL="https://rakuos.org/docs/secure-boot"
+SECUREBOOT_DOC_URL_QR="/usr/share/rakuos/secure_boot_qr.png"
 
 # Rakuos anaconda profile
 : ${VARIANT_ID:?}
@@ -85,12 +88,36 @@ fi
 unset -v _icon
 unset -v _icon_symbol
 
+# Hardcode installer icon path so WhiteSur icon theme doesn't override it
+sed -i 's|^Icon=.*|Icon=/usr/share/icons/hicolor/scalable/apps/org.fedoraproject.AnacondaInstaller.svg|' \
+    /usr/share/applications/liveinst.desktop 2>/dev/null || true
+
 # Default Kickstart
 cat <<EOF >>/usr/share/anaconda/interactive-defaults.ks
 
 # Create log directory
 %pre
 mkdir -p /tmp/anacoda_custom_logs
+%end
+
+# Check CPU is x86-64-v3 compatible (required by the RakuOS CachyOS kernel)
+%pre --log=/tmp/anacoda_custom_logs/cpu_compat_check.log
+IS_V3=true
+for flag in avx2 bmi2 fma; do
+    grep -qw "\$flag" /proc/cpuinfo || IS_V3=false
+done
+if [[ "\$IS_V3" == "false" ]]; then
+    run0 --user=liveuser yad \
+        --on-top \
+        --fixed \
+        --timeout=0 \
+        --title="Incompatible CPU" \
+        --button="Exit Installer":0 \
+        --image=dialog-error \
+        --text="<span size='x-large'><b>Your CPU is not compatible with RakuOS</b></span>\n\nRakuOS requires an <b>x86-64-v3</b> compatible processor.\nThis requires AVX2, BMI2, and FMA instruction support.\n\nMinimum supported CPUs:\n  • Intel: Haswell (2013) or newer\n  • AMD: Zen 1 (2017) or newer\n\nInstallation cannot continue on this system."
+    pkill liveinst || true
+    pkill firefox || true
+fi
 %end
 
 # Check if there is a bitlocker partition and ask the user to disable it
@@ -171,8 +198,50 @@ ostreecontainer --url=$imageref:$imagetag --transport=containers-storage --no-si
 %include /usr/share/anaconda/post-scripts/disable-fedora-flatpak.ks
 %include /usr/share/anaconda/post-scripts/install-flatpaks.ks
 %include /usr/share/anaconda/post-scripts/flatpak-restore-selinux-labels.ks
+%include /usr/share/anaconda/post-scripts/secureboot-enroll-key.ks
+%include /usr/share/anaconda/post-scripts/secureboot-docs.ks
 
 EOF
+
+# Enroll Secure Boot Key
+cat <<EOF >>/usr/share/anaconda/post-scripts/secureboot-enroll-key.ks
+%post --erroronfail --nochroot --log=/tmp/anacoda_custom_logs/secureboot-enroll-key.log
+set -oue pipefail
+
+readonly ENROLLMENT_PASSWORD="rakuos"
+readonly SECUREBOOT_KEY="$SECUREBOOT_KEY"
+
+if [[ ! -d "/sys/firmware/efi" ]]; then
+    echo "EFI mode not detected. Skipping key enrollment."
+    exit 0
+fi
+
+if [[ ! -f "\$SECUREBOOT_KEY" ]]; then
+    echo "Secure boot key not found: \$SECUREBOOT_KEY"
+    exit 0
+fi
+
+mokutil --timeout -1 || :
+echo -e "\$ENROLLMENT_PASSWORD\n\$ENROLLMENT_PASSWORD" | mokutil --import "\$SECUREBOOT_KEY" || :
+%end
+EOF
+
+# Secure Boot docs dialog
+cat <<EOF >>/usr/share/anaconda/post-scripts/secureboot-docs.ks
+%post --nochroot --log=/tmp/anacoda_custom_logs/secureboot-docs.log
+SECUREBOOT_KEY="$SECUREBOOT_KEY"
+SECUREBOOT_DOC_URL="$SECUREBOOT_DOC_URL"
+SECUREBOOT_DOC_URL_QR="$SECUREBOOT_DOC_URL_QR"
+
+LC_ALL=C mokutil -t "\$SECUREBOOT_KEY" 2>/dev/null | grep -q "is already in the enrollment request" && \
+    run0 --user=liveuser yad \
+        --timeout=0 --on-top --button=Ok:0 \
+        --image="\$SECUREBOOT_DOC_URL_QR" \
+        --text="<b>Secure Boot Key enrollment queued</b>\n\nOn your next reboot, a blue screen will appear.\nSelect <b>Enroll MOK</b> and enter the password: <b>rakuos</b>\n\nFor more info visit: \$SECUREBOOT_DOC_URL"
+%end
+EOF
+
+qrencode -o "$SECUREBOOT_DOC_URL_QR" "$SECUREBOOT_DOC_URL"
 
 # Signed Images
 cat <<EOF >>/usr/share/anaconda/post-scripts/install-configure-upgrade.ks
