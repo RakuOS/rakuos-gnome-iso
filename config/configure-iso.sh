@@ -109,6 +109,7 @@ done
 if [[ "\$IS_V3" == "false" ]]; then
     run0 --user=liveuser yad \
         --on-top \
+        --fixed \
         --timeout=0 \
         --title="Incompatible CPU" \
         --button="Exit Installer":0 \
