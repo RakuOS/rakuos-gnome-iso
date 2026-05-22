@@ -115,6 +115,7 @@ if [[ "\$IS_V3" == "false" ]]; then
         --image=dialog-error \
         --text="<span size='x-large'><b>Your CPU is not compatible with RakuOS</b></span>\n\nRakuOS requires an <b>x86-64-v3</b> compatible processor.\nThis requires AVX2, BMI2, and FMA instruction support.\n\nMinimum supported CPUs:\n  • Intel: Haswell (2013) or newer\n  • AMD: Zen 1 (2017) or newer\n\nInstallation cannot continue on this system."
     pkill liveinst || true
+    pkill firefox || true
 fi
 %end
 
