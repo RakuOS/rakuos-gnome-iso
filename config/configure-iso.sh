@@ -88,12 +88,34 @@ fi
 unset -v _icon
 unset -v _icon_symbol
 
+# Hardcode installer icon path so WhiteSur icon theme doesn't override it
+sed -i 's|^Icon=.*|Icon=/usr/share/icons/hicolor/scalable/apps/org.fedoraproject.AnacondaInstaller.svg|' \
+    /usr/share/applications/liveinst.desktop 2>/dev/null || true
+
 # Default Kickstart
 cat <<EOF >>/usr/share/anaconda/interactive-defaults.ks
 
 # Create log directory
 %pre
 mkdir -p /tmp/anacoda_custom_logs
+%end
+
+# Check CPU is x86-64-v3 compatible (required by the RakuOS CachyOS kernel)
+%pre --log=/tmp/anacoda_custom_logs/cpu_compat_check.log
+IS_V3=true
+for flag in avx2 bmi2 fma; do
+    grep -qw "\$flag" /proc/cpuinfo || IS_V3=false
+done
+if [[ "\$IS_V3" == "false" ]]; then
+    run0 --user=liveuser yad \
+        --on-top \
+        --timeout=0 \
+        --title="Incompatible CPU" \
+        --button="Exit Installer":0 \
+        --image=dialog-error \
+        --text="<span size='x-large'><b>Your CPU is not compatible with RakuOS</b></span>\n\nRakuOS requires an <b>x86-64-v3</b> compatible processor.\nThis requires AVX2, BMI2, and FMA instruction support.\n\nMinimum supported CPUs:\n  • Intel: Haswell (2013) or newer\n  • AMD: Zen 1 (2017) or newer\n\nInstallation cannot continue on this system."
+    pkill liveinst || true
+fi
 %end
 
 # Check if there is a bitlocker partition and ask the user to disable it
