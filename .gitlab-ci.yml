@@ -41,7 +41,7 @@ workflow:
     - when: never
 
 variables:
-  IMAGE_REPO: "registry.gitlab.com/rakuos/images/rakuos-gnome"
+  IMAGE_REPO: "quay.io/rakuos/rakuos-gnome"
   TITANOBOA_REPO: "https://gitlab.com/rakuos/iso/rakuos-forge.git"
   TITANOBOA_REF: "main"
   PLATFORM: "amd64"
@@ -235,7 +235,7 @@ build-iso-nvidia:
   script:
     - |
       set -euo pipefail
-      export IMAGE_REF="${IMAGE_REPO}/nvidia:${BRANCH_SLUG}"
+      export IMAGE_REF="${IMAGE_REPO}-nvidia:${BRANCH_SLUG}"
       git clone --depth 1 --branch "${TITANOBOA_REF}" "${TITANOBOA_REPO}" rakuos-forge
       export TITANOBOA_BUILDER_DISTRO="${BUILDER_DISTRO}"
       export HOOK_post_rootfs="${CI_PROJECT_DIR}/config/configure-iso.sh"
