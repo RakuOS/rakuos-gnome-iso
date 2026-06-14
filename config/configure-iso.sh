@@ -50,7 +50,7 @@ if [[ -f /usr/share/rakuos/packages-live.list ]]; then
     sed -i -e '$a\' /var/lib/rakuos/packages.list
 fi
 
-# Detect live image ref and tag (used for nvidia checks below)
+# Variables
 imageref="$(podman images --format '{{ index .Names 0 }}\n' 'rakuos*' | head -1)"
 imageref="${imageref##*://}"
 imageref="${imageref%%:*}"
@@ -75,14 +75,14 @@ EOF
 ### Desktop-environment specific tweaks ###
 
 # Use GSK_RENDERER=gl for NVIDIA — workaround for GTK apps not opening
-if [[ $imageref == */nvidia* ]]; then
+if [[ $imageref == *-nvidia* ]]; then
     mkdir -p /etc/environment.d /etc/skel/.config/environment.d
     echo "GSK_RENDERER=gl" >>/etc/environment.d/99-nvidia-fix.conf
     echo "GSK_RENDERER=gl" >>/etc/skel/.config/environment.d/99-nvidia-fix.conf
 fi
 
 # Re-enable nouveau for the live session on NVIDIA images
-if [[ $imageref == */nvidia* ]]; then
+if [[ $imageref == *-nvidia* ]]; then
     for pkg in nvidia-gpu-firmware mesa-vulkan-drivers; do
         dnf -yq reinstall --allowerasing $pkg ||
             dnf -yq install --allowerasing $pkg
