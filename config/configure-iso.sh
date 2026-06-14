@@ -254,14 +254,14 @@ EOF
 # Setup script to show dialog popups at login
 
 # Use GSK_RENDERER=gl for nvidia, workaround for GTK apps not opening.
-if [[ $imageref == */nvidia* ]]; then
+if [[ $imageref == *-nvidia* ]]; then
     mkdir -p /etc/environment.d /etc/skel/.config/environment.d
     echo "GSK_RENDERER=gl" >>/etc/environment.d/99-nvidia-fix.conf
     echo "GSK_RENDERER=gl" >>/etc/skel/.config/environment.d/99-nvidia-fix.conf
 fi
 
 # Reenable noveau.
-if [[ $imageref == */nvidia* ]]; then
+if [[ $imageref == *-nvidia* ]]; then
     for pkg in nvidia-gpu-firmware mesa-vulkan-drivers; do
         dnf -yq reinstall --allowerasing $pkg ||
             dnf -yq install --allowerasing $pkg
