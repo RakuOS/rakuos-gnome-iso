@@ -19,6 +19,24 @@ dnf -y versionlock delete "${kernel_pkgs[@]}" 2>/dev/null || true
 dnf --setopt=protect_running_kernel=False -y remove "${kernel_pkgs[@]}" 2>/dev/null || true
 (cd /usr/lib/modules && rm -rf -- ./*)
 dnf -y --repo fedora,updates --setopt=tsflags=noscripts install kernel kernel-core
+
+dnf -y install \
+    virtualbox-guest-additions \
+    amd-gpu-firmware \
+    amd-ucode-firmware \
+    atheros-firmware \
+    brcmfmac-firmware \
+    cirrus-audio-firmware \
+    intel-audio-firmware \
+    intel-gpu-firmware \
+    linux-firmware \
+    mt7xxx-firmware \
+    nvidia-gpu-firmware \
+    nxpwireless-firmware \
+    qcom-wwan-firmware \
+    realtek-firmware \
+    tiwilink-firmware
+
 kernel=$(find /usr/lib/modules -maxdepth 1 -type d -printf '%P\n' | grep .)
 depmod "$kernel"
 dnf clean all -yq
