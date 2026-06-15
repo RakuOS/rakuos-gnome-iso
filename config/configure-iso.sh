@@ -21,7 +21,7 @@ flatpak update --system --appstream -y
 dnf -qy versionlock clear
 
 # Install RakuOS installer (GTK frontend + common backend + fisherman)
-dnf install -qy rakuos-installer-gtk libblockdev-{btrfs,lvm,dm}
+dnf install -qy rakuos-installer-gtk
 
 # Read packages into array and install
 mapfile -t PACKAGES < <(
