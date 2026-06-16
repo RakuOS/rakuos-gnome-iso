@@ -188,6 +188,11 @@ build-iso-standard:
             "output/${NEW_ISO_NAME}" \
             "output/${LATEST_ISO_NAME}" \
             "${SFTP_USERNAME}@${SFTP_HOST}:${SFTP_TARGET}/"
+          echo "Removing runner from ZeroTier network..."
+          curl -fsS -X DELETE \
+            -H "Authorization: token ${ZEROTIER_CENTRAL_TOKEN}" \
+            "https://api.zerotier.com/api/v1/network/${ZEROTIER_NETWORK_ID}/member/${ZT_NODE_ID}" || true
+          zerotier-cli leave "${ZEROTIER_NETWORK_ID}" || true
         else
           echo "RakuOS server upload disabled; skipping ZeroTier and SFTP upload."
         fi
@@ -288,6 +293,11 @@ build-iso-nvidia:
             "output/${NEW_ISO_NAME}" \
             "output/${LATEST_ISO_NAME}" \
             "${SFTP_USERNAME}@${SFTP_HOST}:${SFTP_TARGET}/"
+          echo "Removing runner from ZeroTier network..."
+          curl -fsS -X DELETE \
+            -H "Authorization: token ${ZEROTIER_CENTRAL_TOKEN}" \
+            "https://api.zerotier.com/api/v1/network/${ZEROTIER_NETWORK_ID}/member/${ZT_NODE_ID}" || true
+          zerotier-cli leave "${ZEROTIER_NETWORK_ID}" || true
         else
           echo "RakuOS server upload disabled; skipping ZeroTier and SFTP upload."
         fi
