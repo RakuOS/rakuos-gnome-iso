@@ -24,18 +24,26 @@ dnf -y install \
     virtualbox-guest-additions \
     amd-gpu-firmware \
     amd-ucode-firmware \
-    atheros-firmware \
-    brcmfmac-firmware \
     cirrus-audio-firmware \
     intel-audio-firmware \
     intel-gpu-firmware \
     linux-firmware \
-    mt7xxx-firmware \
     nvidia-gpu-firmware \
-    nxpwireless-firmware \
     qcom-wwan-firmware \
+    atheros-firmware \
+    b43-fwcutter \
+    b43-openfwwf \
+    brcmfmac-firmware \
+    iwlegacy-firmware \
+    iwlwifi-dvm-firmware \
+    iwlwifi-mvm-firmware \
+    libertas-firmware \
+    mt7xxx-firmware \
+    nxpwireless-firmware \
     realtek-firmware \
     tiwilink-firmware \
+    atmel-firmware \
+    zd1211-firmware \
     NetworkManager-wifi
 
 kernel=$(find /usr/lib/modules -maxdepth 1 -type d -printf '%P\n' | grep .)
