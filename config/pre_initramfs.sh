@@ -44,7 +44,10 @@ dnf -y install \
     tiwilink-firmware \
     atmel-firmware \
     zd1211-firmware \
+    broadcom-wl \
     NetworkManager-wifi
+
+akmods
 
 kernel=$(find /usr/lib/modules -maxdepth 1 -type d -printf '%P\n' | grep .)
 depmod "$kernel"
