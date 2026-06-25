@@ -35,7 +35,8 @@ dnf -y install \
     nxpwireless-firmware \
     qcom-wwan-firmware \
     realtek-firmware \
-    tiwilink-firmware
+    tiwilink-firmware \
+    NetworkManager-wifi
 
 kernel=$(find /usr/lib/modules -maxdepth 1 -type d -printf '%P\n' | grep .)
 depmod "$kernel"
