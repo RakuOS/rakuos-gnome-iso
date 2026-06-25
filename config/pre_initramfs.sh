@@ -21,6 +21,13 @@ dnf --setopt=protect_running_kernel=False -y remove "${kernel_pkgs[@]}" 2>/dev/n
 dnf -y --repo fedora,updates --setopt=tsflags=noscripts install kernel kernel-core kernel-devel kernel-modules
 
 dnf -y install \
+    --exclude=kernel-cachyos \
+    --exclude=kernel-cachyos-core \
+    --exclude=kernel-cachyos-devel \
+    --exclude=kernel-cachyos-devel-matched \
+    --exclude=kernel-cachyos-modules \
+    --exclude=kernel-cachyos-modules-core \
+    --exclude=kernel-cachyos-modules-extra \
     virtualbox-guest-additions \
     amd-gpu-firmware \
     amd-ucode-firmware \
