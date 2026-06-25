@@ -47,7 +47,8 @@ dnf -y install \
     broadcom-wl \
     NetworkManager-wifi
 
-akmods
+KVER="$(dnf5 repoquery --installed --qf '%{VERSION}-%{RELEASE}.%{ARCH}' kernel)"
+akmods --force --kernels "$KVER"
 
 kernel=$(find /usr/lib/modules -maxdepth 1 -type d -printf '%P\n' | grep .)
 depmod "$kernel"
