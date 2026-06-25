@@ -18,7 +18,7 @@ kernel_pkgs=(
 dnf -y versionlock delete "${kernel_pkgs[@]}" 2>/dev/null || true
 dnf --setopt=protect_running_kernel=False -y remove "${kernel_pkgs[@]}" 2>/dev/null || true
 (cd /usr/lib/modules && rm -rf -- ./*)
-dnf -y --repo fedora,updates --setopt=tsflags=noscripts install kernel kernel-core
+dnf -y --repo fedora,updates --setopt=tsflags=noscripts install kernel kernel-core kernel-devel kernel-modules
 
 dnf -y install \
     virtualbox-guest-additions \
@@ -47,9 +47,9 @@ dnf -y install \
     broadcom-wl \
     NetworkManager-wifi
 
-KVER="$(dnf5 repoquery --installed --qf '%{VERSION}-%{RELEASE}.%{ARCH}' kernel-core)"
+KVER="$(rpm -q kernel-core --qf '%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort -V | tail -1)"
 akmods --force --kernels "$KVER"
-
+    
 kernel=$(find /usr/lib/modules -maxdepth 1 -type d -printf '%P\n' | grep .)
 depmod "$kernel"
 dnf clean all -yq
