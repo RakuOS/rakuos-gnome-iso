@@ -6,8 +6,7 @@ source /etc/os-release
 
 
 # Disable overlay services in live environment
-systemctl disable --now rakuos-overlay-sync.service \
-          rakuos-overlay-mount.service
+systemctl disable --now rakuos-overlay-sync.service
 
 # sudo requires drop-in files to be owned by root and not be writable by others
 chown root:root /etc/sudoers.d/rakuos-software
