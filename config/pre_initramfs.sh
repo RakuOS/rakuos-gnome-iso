@@ -14,7 +14,6 @@ kernel_pkgs=(
     kernel-cachyos-modules
     kernel-cachyos-modules-core
     kernel-cachyos-modules-extra
-    rakuos-core
 )
 dnf -y versionlock delete "${kernel_pkgs[@]}" 2>/dev/null || true
 dnf --setopt=protect_running_kernel=False -y remove "${kernel_pkgs[@]}" 2>/dev/null || true
