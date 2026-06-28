@@ -58,7 +58,6 @@ kernel=$(find /usr/lib/modules -maxdepth 1 -type d -printf '%P\n' | grep .)
 depmod "$kernel"
 dnf clean all -yq
 
-# Exclude the RakuOS overlay dracut module from the live initrd — it is only
+# Remove the RakuOS overlay dracut module before initrd build — it is only
 # meaningful on installed systems where the overlayfs and /var state exist.
-mkdir -p /etc/dracut.conf.d
-echo 'omit_dracutmodules+=" 90rakuos-overlay "' > /etc/dracut.conf.d/99-rakuos-live-omit.conf
+rm -rf /usr/lib/dracut/modules.d/90rakuos-overlay
