@@ -57,7 +57,3 @@ dnf -y install \
 kernel=$(find /usr/lib/modules -maxdepth 1 -type d -printf '%P\n' | grep .)
 depmod "$kernel"
 dnf clean all -yq
-
-# Remove the RakuOS overlay dracut module before initrd build — it is only
-# meaningful on installed systems where the overlayfs and /var state exist.
-rm -rf /usr/lib/dracut/modules.d/90rakuos-overlay
