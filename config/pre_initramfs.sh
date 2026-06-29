@@ -21,38 +21,22 @@ dnf --setopt=protect_running_kernel=False -y remove "${kernel_pkgs[@]}" 2>/dev/n
 dnf -y --repo fedora,updates --setopt=tsflags=noscripts install kernel kernel-core kernel-devel kernel-modules
 
 dnf -y install \
-    --exclude=kernel-cachyos \
-    --exclude=kernel-cachyos-core \
-    --exclude=kernel-cachyos-devel \
-    --exclude=kernel-cachyos-devel-matched \
-    --exclude=kernel-cachyos-modules \
-    --exclude=kernel-cachyos-modules-core \
-    --exclude=kernel-cachyos-modules-extra \
     virtualbox-guest-additions \
     amd-gpu-firmware \
     amd-ucode-firmware \
+    atheros-firmware \
+    brcmfmac-firmware \
     cirrus-audio-firmware \
     intel-audio-firmware \
     intel-gpu-firmware \
     linux-firmware \
-    nvidia-gpu-firmware \
-    qcom-wwan-firmware \
-    atheros-firmware \
-    b43-fwcutter \
-    b43-openfwwf \
-    brcmfmac-firmware \
-    iwlegacy-firmware \
-    iwlwifi-dvm-firmware \
-    iwlwifi-mvm-firmware \
-    libertas-firmware \
     mt7xxx-firmware \
+    nvidia-gpu-firmware \
     nxpwireless-firmware \
+    qcom-wwan-firmware \
     realtek-firmware \
-    tiwilink-firmware \
-    atmel-firmware \
-    zd1211-firmware \
-    broadcom-wl \
-    NetworkManager-wifi
+    tiwilink-firmware
+
 
 KVER="$(rpm -q kernel-core --qf '%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort -V | tail -1)"
 akmods --force --kernels "$KVER"
