@@ -28,6 +28,13 @@ dnf -y install \
     --exclude=kernel-p03-modules \
     --exclude=kernel-p03-modules-core \
     --exclude=kernel-p03-modules-extra \
+    --exclude=kernel-cachyos \
+    --exclude=kernel-cachyos-core \
+    --exclude=kernel-cachyos-devel \
+    --exclude=kernel-cachyos-devel-matched \
+    --exclude=kernel-cachyos-modules \
+    --exclude=kernel-cachyos-modules-core \
+    --exclude=kernel-cachyos-modules-extra \
     virtualbox-guest-additions \
     amd-gpu-firmware \
     amd-ucode-firmware \
