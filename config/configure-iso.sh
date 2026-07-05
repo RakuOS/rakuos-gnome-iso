@@ -4,11 +4,6 @@ set -exo pipefail
 
 source /etc/os-release
 
-
-# Disable overlay services in live environment
-systemctl disable --now rakuos-overlay-sync.service \
-          rakuos-overlay-mount.service
-
 # sudo requires drop-in files to be owned by root and not be writable by others
 chown root:root /etc/sudoers.d/rakuos-software
 chmod 0440 /etc/sudoers.d/rakuos-software
@@ -22,6 +17,9 @@ dnf -qy versionlock clear
 
 # Install RakuOS installer (GTK frontend + common backend + fisherman)
 dnf install -qy rakuos-installer-gtk
+
+# Mask overlay services so they cannot be started or pulled in on the live ISO
+systemctl mask rakuos-overlay-sync.service rakuos-overlay-mount.service
 
 # Read packages into array and install
 mapfile -t PACKAGES < <(
