@@ -7,6 +7,13 @@ echo "Preparing initramfs for RakuOS Linux Live ISO"
 # boots with Secure Boot enabled. The installed system gets the CachyOS kernel
 # from the container image — this only affects the live boot environment.
 kernel_pkgs=(
+    kernel-p03
+    kernel-p03-core
+    kernel-p03-devel
+    kernel-p03-devel-matched
+    kernel-p03-modules
+    kernel-p03-modules-core
+    kernel-p03-modules-extra
     kernel-p03-v3
     kernel-p03-v3-core
     kernel-p03-v3-devel
