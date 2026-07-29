@@ -7,6 +7,13 @@ echo "Preparing initramfs for RakuOS Linux Live ISO"
 # boots with Secure Boot enabled. The installed system gets the CachyOS kernel
 # from the container image — this only affects the live boot environment.
 kernel_pkgs=(
+    kernel-p03
+    kernel-p03-core
+    kernel-p03-devel
+    kernel-p03-devel-matched
+    kernel-p03-modules
+    kernel-p03-modules-core
+    kernel-p03-modules-extra
     kernel-p03-v3
     kernel-p03-v3-core
     kernel-p03-v3-devel
@@ -28,20 +35,27 @@ dnf --setopt=protect_running_kernel=False -y remove "${kernel_pkgs[@]}" 2>/dev/n
 dnf -y --repo fedora,updates --setopt=tsflags=noscripts install kernel kernel-core kernel-devel kernel-modules
 
 dnf -y install \
-    --exclude=kernel-p03 \
-    --exclude=kernel-p03-core \
-    --exclude=kernel-p03-devel \
-    --exclude=kernel-p03-devel-matched \
-    --exclude=kernel-p03-modules \
-    --exclude=kernel-p03-modules-core \
-    --exclude=kernel-p03-modules-extra \
-    --exclude=kernel-cachyos \
-    --exclude=kernel-cachyos-core \
-    --exclude=kernel-cachyos-devel \
-    --exclude=kernel-cachyos-devel-matched \
-    --exclude=kernel-cachyos-modules \
-    --exclude=kernel-cachyos-modules-core \
-    --exclude=kernel-cachyos-modules-extra \
+--exclude=kernel-p03 \
+--exclude=kernel-p03-core \
+--exclude=kernel-p03-devel \
+--exclude=kernel-p03-devel-matched \
+--exclude=kernel-p03-modules \
+--exclude=kernel-p03-modules-core \
+--exclude=kernel-p03-modules-extra \
+--exclude=kernel-p03-v3 \
+--exclude=kernel-p03-v3-core \
+--exclude=kernel-p03-v3-devel \
+--exclude=kernel-p03-v3-devel-matched \
+--exclude=kernel-p03-v3-modules \
+--exclude=kernel-p03-v3-modules-core \
+--exclude=kernel-p03-v3-modules-extra \
+--exclude=kernel-p03-v4 \
+--exclude=kernel-p03-v4-core \
+--exclude=kernel-p03-v4-devel \
+--exclude=kernel-p03-v4-devel-matched \
+--exclude=kernel-p03-v4-modules \
+--exclude=kernel-p03-v4-modules-core \
+--exclude=kernel-p03-v4-modules-extra \
     virtualbox-guest-additions \
     amd-gpu-firmware \
     amd-ucode-firmware \
@@ -67,6 +81,9 @@ dnf -y install \
     zd1211-firmware \
     broadcom-wl \
     NetworkManager-wifi
+
+KVER="$(rpm -q kernel-core --qf '%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort -V | tail -1)"
+akmods --force --kernels "$KVER"
 
 KVER="$(rpm -q kernel-core --qf '%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort -V | tail -1)"
 akmods --force --kernels "$KVER"
