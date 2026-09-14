@@ -58,7 +58,7 @@ stages:
 .iso-job:
   image: $JOB_IMAGE
   tags:
-    - saas-linux-medium-amd64
+    - saas-linux-2xlarge-amd64
   before_script:
     - |
       set -euo pipefail
